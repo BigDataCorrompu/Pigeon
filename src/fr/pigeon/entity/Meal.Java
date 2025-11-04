@@ -2,16 +2,15 @@ package fr.pigeon.entity;
 
 
 public class Meal extends Entity {
-    private int idMeal;
 
     public Meal(Coordinate position) {
         this.position = new AtomEntity(position);
-        this.idMeal = IdGenerator.getInstance().getNextId();
+
     }
 
+    // Calcule si la nourriture est encore fraîche
+    public bool isfresh() {
 
-    public int getIdMeal() {
-        return idMeal;
     }
 
 }

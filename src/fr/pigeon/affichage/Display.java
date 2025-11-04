@@ -42,6 +42,8 @@ public class Display extends JPanel {
             g2.setPaint(new GradientPaint(0, 0, Color.DARK_GRAY, 0, getHeight(), Color.GRAY));
             g2.fillRect(0, 0, getWidth(), getHeight());
 
+            
+
         
     }
 }
