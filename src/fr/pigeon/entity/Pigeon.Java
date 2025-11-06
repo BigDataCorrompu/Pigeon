@@ -11,9 +11,12 @@ public class Pigeon extends Entity implements Runnable {
     private static final float SPEED = 1.0f; // Vitesse de déplacement du pigeon
     private int mealsEaten;
     private Coordinate target;
-    private static final long FEAR_DURATION = 5000; // Durée de la peur en millisecondes (5 secondes)
-    private long fearStartTime; // Pour suivre quand la peur a commencé
-    
+
+    // Gestion de la peur
+    private static final long FEAR_DURATION = 5000;      // Durée de la peur
+    private static final long FEAR_COOLDOWN = 4000;      // Délai minimum entre deux peurs
+    private long fearStartTime = 0;                      // Quand la peur a commencé
+    private long lastScareTime = 0; 
 
 
 
@@ -76,8 +79,16 @@ public class Pigeon extends Entity implements Runnable {
     }
 
     public void setAfraid() {
+        long now = System.currentTimeMillis();
+
+        // Vérifie si le pigeon peut être effrayé à nouveau
+        if (now - lastScareTime < FEAR_COOLDOWN) {
+            return; // Ignore si trop tôt
+        }
+
         this.isAfraid = true;
-        this.fearStartTime = System.currentTimeMillis();
+        this.fearStartTime = now;
+        this.lastScareTime = now;
     }
 
     private void checkAndUpdateFearState() {

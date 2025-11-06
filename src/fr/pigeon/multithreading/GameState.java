@@ -85,6 +85,9 @@ public class GameState {
     public void updateCollisions() {
         // Gestion des collisions entre pigeons et nourriture
         for (Pigeon pigeon : pigeons) {
+            if(pigeon.isAfraid()) {
+                continue; // Ne pas vérifier les collisions si le pigeon est effrayé
+            }
             for (Meal meal : meals) {
                 if(meal.isFresh()) {
                     if (isCollided(pigeon, meal)) {
@@ -124,8 +127,8 @@ public class GameState {
         for (Pigeon pigeon : pigeons) {
             pigeon.setAfraid();
             // Calcule une nouvelle position aléatoire
-            float newX = random.nextFloat() * 800 * ((random.nextFloat() * 2f) - 1f); 
-            float newY = random.nextFloat() * 600 * ((random.nextFloat() * 2f) - 1f); 
+            float newX = random.nextFloat() * 800 * ((random.nextFloat() * 2f) - 1f) * 1000; 
+            float newY = random.nextFloat() * 600 * ((random.nextFloat() * 2f) - 1f) * 1000; 
             pigeon.setTarget(new Coordinate(newX, newY));
             
             

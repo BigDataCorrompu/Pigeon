@@ -65,6 +65,36 @@ public class Display extends JPanel {
             });
     }   
 
+    private void drawLegend(Graphics2D g2) {
+        int startX = 20;
+        int startY = 20;
+        int lineHeight = 20;
+
+        g2.setColor(Color.WHITE);
+        g2.setFont(new Font("Arial", Font.PLAIN, 14));
+
+        g2.drawString("Clic droit : ajouter de la nourriture à la position du clic", startX, startY);
+        g2.drawString("Espace : Apparition aléatoire d'un pigeon", startX, startY + lineHeight);
+
+        // Pigeon bleu
+        g2.setColor(Color.BLUE);
+        g2.fillOval(startX + 10, startY + lineHeight * 3 - 10, 10, 10);
+        g2.setColor(Color.WHITE);
+        g2.drawString("Pigeon", startX + 30, startY + lineHeight * 3);
+
+        // Nourriture verte
+        g2.setColor(Color.GREEN);
+        g2.fillOval(startX + 10, startY + lineHeight * 4 - 10, 10, 10);
+        g2.setColor(Color.WHITE);
+        g2.drawString("Nourriture fraîche", startX + 30, startY + lineHeight * 4);
+
+        // Nourriture rouge
+        g2.setColor(Color.RED);
+        g2.fillOval(startX + 10, startY + lineHeight * 5 - 10, 10, 10);
+        g2.setColor(Color.WHITE);
+        g2.drawString("Nourriture pourrie", startX + 30, startY + lineHeight * 5);
+    }
+
     @Override
     protected void paintComponent(Graphics g) {
         super.paintComponent(g);
@@ -86,6 +116,8 @@ public class Display extends JPanel {
         if (pigeonImage != null) {
             g2.drawImage(pigeonImage, x, 100, this);
         }
+        
+        drawLegend(g2);
 
         g2.dispose();
     }
