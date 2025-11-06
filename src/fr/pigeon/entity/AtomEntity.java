@@ -1,4 +1,4 @@
-package fr.cawar.serveur;
+package fr.pigeon.entity;
 
 import java.util.concurrent.atomic.AtomicLong;
 

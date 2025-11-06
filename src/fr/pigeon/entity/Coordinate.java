@@ -19,6 +19,13 @@ public class Coordinate {
         return "(" + x + ", " + y + ")";
     }
 
+    // Calcul de distance entre deux coordonnées
+    public float distanceTo(Coordinate other) {
+        float dx = this.x - other.x;
+        float dy = this.y - other.y;
+        return (float) Math.sqrt(dx * dx + dy * dy);
+    }
+
     // Renvoie une copie de coordinate
     public Coordinate getCoordinate() {
         return new Coordinate(this.x, this.y);

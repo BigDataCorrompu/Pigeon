@@ -1,18 +1,26 @@
 package fr.pigeon.entity;
 
 public class Entity {
-    private AtomEntity position;
+    protected AtomEntity position;
+    protected float radius;
 
     public Entity(Coordinate position) {
         this.position = new AtomEntity(position);
     }
 
-    public AtomEntity getPosition() {
-        return position;
+    public Coordinate getPosition() {
+        return this.position.getCoordinate();
     }
     
-    public void setPosition(AtomEntity position) {
-        this.position = position;
+    public void setPosition(Coordinate position) {
+        this.position.setCoordinate(position);
+    }
+
+    @Override
+    public String toString() {
+        return "Entity{" +
+                "position=" + position +
+                '}';
     }
 
 }

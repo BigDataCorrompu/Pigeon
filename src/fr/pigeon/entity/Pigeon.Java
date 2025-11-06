@@ -1,57 +1,119 @@
 package fr.pigeon.entity;
+// import math
+
 
 
 public class Pigeon extends Entity implements Runnable {
     // Pour que le thread n'utilise pas une variable dans le cache non modifiée
-    private volatile boolean isFlying; 
+    private volatile boolean isRunning = true; // Le thread est il en cours d'exécution ?
+    private volatile boolean isFlying; // LE pigeon est-il en vol ?
+    private volatile boolean isAfraid;
     private static final float SPEED = 1.0f; // Vitesse de déplacement du pigeon
+    private int mealsEaten;
+    private Coordinate target;
+    private static final long FEAR_DURATION = 5000; // Durée de la peur en millisecondes (5 secondes)
+    private long fearStartTime; // Pour suivre quand la peur a commencé
+    
+
+
 
 
     public Pigeon(Coordinate position) {
         super(position);
-        this.isRunning = false;
+        this.isFlying = false;
     }
 
 
     // Logique de déplacement vers la cible
-    private void moveTowardTarget(Meal target) {
-        Coordinate targetPos = taget.getPosition();
+    public void moveTowardTarget(Coordinate targetPos) {
         Coordinate myPos = this.getPosition();
 
         // Calcul de la direction
         float dx = targetPos.getX() - myPos.getX();
         float dy = targetPos.getY() - myPos.getY();
-        angle = (float) Math.atan2(dy, dx);
+        float angle = (float) Math.atan2(dy, dx);
 
         // Déplacement
-        float newX = myPos.getX() + SPEED * Math.cos(angle);
-        float newY = myPos.getY() + SPEED * Math.sin(angle);
+        float newX = myPos.getX() + SPEED * (float) Math.cos(angle);
+        float newY = myPos.getY() + SPEED * (float) Math.sin(angle);
 
-        this.setPosition(new Coordinate(newX, newY));    
+        // clamp au bord de la fenêtre
+        newX = Math.max(0, Math.min(newX, 800));  
+        newY = Math.max(0, Math.min(newY, 600));  
+
+
+        this.position.setCoordinate(new Coordinate(newX, newY));    
     }
 
+    public void setTarget(Coordinate target) {
+        this.target = target;
+    }
+
+    public void startThread() {
+        Thread pigeonThread = new Thread(this);
+        pigeonThread.start();
+    }
+    
     public void startPigeon() {
         this.isFlying = true;
-        new Thread(this).start();
     }
 
     public void stopPigeon() {
         this.isFlying = false;
     }
 
+    public void feed() {
+        mealsEaten++;
+    }
+
+    public boolean isAfraid() {
+        return isAfraid;
+    }
+
+    public boolean calmPigeon() {
+        this.isAfraid = false;
+        return this.isAfraid;
+    }
+
+    public void setAfraid() {
+        this.isAfraid = true;
+        this.fearStartTime = System.currentTimeMillis();
+    }
+
+    private void checkAndUpdateFearState() {
+        if (isAfraid && System.currentTimeMillis() - fearStartTime >= FEAR_DURATION) {
+            calmPigeon();
+            this.isFlying = true;    
+            this.target = null;
+        }
+    }
+
 
     @Override
     public void run() {
-        while (isFlying) {
+        while (isRunning) {
             try {
-                // Logique du pigeon pendant qu'il vole
-                
+                checkAndUpdateFearState(); // Vérifier l'état de peur
+                if(isFlying && target != null) {
+                    // Logique du pigeon pendant qu'il vole
+                    this.moveTowardTarget(this.target);
+                    Thread.sleep(16); // ~60 fps, lance InterruptedException
+                }
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
+                break;
             }
-            
         }
+    }
 
-
+    @Override
+    public String toString() {
+        return "Pigeon{" +
+                "position=" + getPosition() +
+                ", isFlying=" + isFlying +
+                ", mealsEaten=" + mealsEaten +
+                ", target=" + target +
+                '}';
+    }
 
 }
