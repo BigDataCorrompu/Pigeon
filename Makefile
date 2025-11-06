@@ -10,9 +10,9 @@ MAIN_CLASS = fr.pigeon.Main
 # Règle par défaut
 all: compile
 
-# Génère la liste des fichiers sources
+# Génère la liste des fichiers sources (insensible à la casse pour inclure .Java / .java)
 $(SOURCES):
-	find src -name "*.java" > $(SOURCES)
+	find src -iname "*.java" > $(SOURCES)
 
 # Compile tous les fichiers Java
 compile: $(SOURCES)
