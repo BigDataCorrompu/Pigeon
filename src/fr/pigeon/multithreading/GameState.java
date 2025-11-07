@@ -54,11 +54,25 @@ public class GameState {
 
     public void updatefreshnessMeals() {
         // Gestion de la fraîcheur de la nourriture
-        for(Meal meal : meals) {
+        // On ne doit pas supprimer d'éléments directement pendant l'itération.
+        // Collecter d'abord les meals à retirer, puis effectuer la suppression
+        // dans un bloc synchronisé pour garantir l'atomicité.
+        java.util.List<Meal> toRemove = new java.util.ArrayList<>();
+        for (Meal meal : meals) {
             meal.decreaseFreshness();
-            if(!meal.isFresh()) {
-                rottenMeals.add(meal);
-                meals.remove(meal);
+            if (!meal.isFresh()) {
+                toRemove.add(meal);
+            }
+        }
+
+        if (!toRemove.isEmpty()) {
+            synchronized (this) {
+                for (Meal dead : toRemove) {
+                    // Eviter les suppressions redondantes
+                    if (meals.remove(dead)) {
+                        rottenMeals.add(dead);
+                    }
+                }
             }
         }
     }
