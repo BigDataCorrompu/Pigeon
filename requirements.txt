@@ -1,0 +1,4 @@
+# Python helper requirements for tooling (SVG conversion, downloads)
+# These are NOT required to run the Java application itself.
+cairosvg==2.6.0
+requests==2.31.0
