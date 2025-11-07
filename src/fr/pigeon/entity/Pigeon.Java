@@ -1,5 +1,7 @@
 package fr.pigeon.entity;
 
+import fr.pigeon.utils.Constants;
+
 public class Pigeon extends Entity implements Runnable {
     // Pour que le thread n'utilise pas une variable dans le cache non modifiée
     private volatile boolean isRunning = true; // Le thread est il en cours d'exécution ?
@@ -35,9 +37,9 @@ public class Pigeon extends Entity implements Runnable {
         float newX = myPos.getX() + SPEED * (float) Math.cos(angle);
         float newY = myPos.getY() + SPEED * (float) Math.sin(angle);
 
-        // clamp au bord de la fenêtre
-        newX = Math.max(0, Math.min(newX, 800));
-        newY = Math.max(0, Math.min(newY, 600));
+    // clamp au bord de la fenêtre en utilisant les constantes globales
+    newX = Math.max(0, Math.min(newX, Constants.WINDOW_WIDTH));
+    newY = Math.max(0, Math.min(newY, Constants.WINDOW_HEIGHT));
 
         this.position.setCoordinate(new Coordinate(newX, newY));
     }
