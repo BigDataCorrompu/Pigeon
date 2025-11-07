@@ -34,8 +34,10 @@ public class Main {
             frame.setContentPane(root);
             frame.pack();
             frame.setLocationRelativeTo(null);
-               // Donner le focus au display au démarrage
-               display.requestFocusInWindow();
+            // Empêcher le redimensionnement pour forcer une taille fixe
+            frame.setResizable(false);
+            // Donner le focus au display au démarrage
+            display.requestFocusInWindow();
             frame.setVisible(true);
 
             // Action du bouton Restart : arrête la simulation courante et en démarre une nouvelle
