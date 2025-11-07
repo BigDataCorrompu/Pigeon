@@ -55,6 +55,13 @@ public class Simulation implements Runnable {
         gameState.drawGamestate(g2);
     }
 
+    /**
+     * Retourne le GameState gérant les entités (utilisé par l'affichage pour dessiner les pigeons).
+     */
+    public GameState getGameState() {
+        return this.gameState;
+    }
+
     public void addMeal(Coordinate position) {
         gameState.addMeal(new Meal(position));
     }

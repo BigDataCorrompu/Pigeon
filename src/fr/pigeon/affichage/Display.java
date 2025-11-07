@@ -1,11 +1,13 @@
 package fr.pigeon.affichage;
 import fr.pigeon.entity.Coordinate;
 import fr.pigeon.multithreading.Simulation;
+import fr.pigeon.entity.Pigeon;
 import java.awt.*;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.awt.geom.AffineTransform;
 import java.awt.image.*;
 import java.io.*;
 import javax.imageio.ImageIO;
@@ -15,6 +17,8 @@ public class Display extends JPanel {
     // Display code goes here
     private int x = 0;
     private BufferedImage pigeonImage;
+    // simple animation phase (used when no sprite frames available)
+    private float wingPhase = 0f;
     private Simulation simulation;
     private final int heightWindow = 600;
     private final int widthWindow = 800;
@@ -29,15 +33,19 @@ public class Display extends JPanel {
     setFocusable(true); // Permet de recevoir le focus
     // Ne pas forcer le focus ici de façon bloquante; on demandera le focus lors du clic
 
-        // Sprite arriere plan
-        try {
-            pigeonImage = ImageIO.read(new File("src/fr/resources/pigeon.png"));
+        // Charger le sprite depuis le classpath (resources)
+        try (InputStream in = Display.class.getResourceAsStream("/fr/pigeon/resources/pigeon.png")) {
+            if (in != null) {
+                pigeonImage = ImageIO.read(in);
+            }
         } catch (IOException ignored) {}
 
-        // Timer pour l'animation du pigeon
+        // Timer pour l'animation générale (déplacement du sprite décoratif et phases)
         new Timer(16, e -> {
             x += 2;
             if (x > getWidth()) x = -100;
+            wingPhase += 0.2f;
+            if (wingPhase > Float.MAX_VALUE - 1) wingPhase = 0f;
             repaint();
         }).start();
 
@@ -116,16 +124,49 @@ public class Display extends JPanel {
         g2.setPaint(new GradientPaint(0, 0, Color.DARK_GRAY, 0, getHeight(), Color.GRAY));
         g2.fillRect(0, 0, getWidth(), getHeight());
 
-        // Si une simulation est liée, dessine ses entités
+        // Dessiner les meals et autres éléments via GameState
         if (simulation != null) {
             simulation.drawEntities(g2);
         }
 
-        // Dessiner le sprite du pigeon si nécessaire
-        if (pigeonImage != null) {
-            g2.drawImage(pigeonImage, x, 100, this);
+        // Dessiner les pigeons en sprites tournés vers leur cible (ou fallback)
+        if (simulation != null) {
+            for (fr.pigeon.entity.Pigeon p : simulation.getGameState().getPigeons()) {
+                float px = p.getPosition().getX();
+                float py = p.getPosition().getY();
+                Coordinate target = p.getTarget();
+                double angle = 0.0;
+                if (target != null) {
+                    double dx = target.getX() - px;
+                    double dy = target.getY() - py;
+                    angle = Math.atan2(dy, dx);
+                }
+
+                int drawX = (int) px;
+                int drawY = (int) py;
+
+                if (pigeonImage != null) {
+                    int iw = pigeonImage.getWidth();
+                    int ih = pigeonImage.getHeight();
+                    AffineTransform at = new AffineTransform();
+                    at.translate(drawX - iw/2.0, drawY - ih/2.0);
+                    at.rotate(angle, iw/2.0, ih/2.0);
+                    g2.drawImage(pigeonImage, at, this);
+                } else {
+                    // Fallback: draw a rotated triangle to indicate heading
+                    g2.setColor(Color.BLUE);
+                    AffineTransform old = g2.getTransform();
+                    g2.translate(drawX, drawY);
+                    g2.rotate(angle);
+                    int[] xs = {-8, 8, -8};
+                    int[] ys = {-6, 0, 6};
+                    g2.fillPolygon(xs, ys, 3);
+                    g2.setTransform(old);
+                }
+            }
         }
-        
+
+        // Décaler le dessin de légende
         drawLegend(g2);
 
         g2.dispose();
