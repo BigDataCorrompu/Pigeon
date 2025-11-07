@@ -31,7 +31,7 @@ public class Display extends JPanel {
 
         // Sprite arriere plan
         try {
-            pigeonImage = ImageIO.read(new File("src/resources/pigeon.png"));
+            pigeonImage = ImageIO.read(new File("src/fr/resources/pigeon.png"));
         } catch (IOException ignored) {}
 
         // Timer pour l'animation du pigeon

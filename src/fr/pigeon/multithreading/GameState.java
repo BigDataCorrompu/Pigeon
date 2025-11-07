@@ -75,8 +75,18 @@ public class GameState {
             }
             else {
                 pigeon.startPigeon();
-                Meal lastMeal = meals.get(meals.size() - 1);
-                pigeon.setTarget(lastMeal.getPosition());
+                // Choisir la nourriture la plus fraîche (max freshnessTicks)
+                Meal freshest = null;
+                int maxFreshness = Integer.MIN_VALUE;
+                for (Meal m : meals) {
+                    if (m.getFreshnessTicks() > maxFreshness) {
+                        maxFreshness = m.getFreshnessTicks();
+                        freshest = m;
+                    }
+                }
+                if (freshest != null) {
+                    pigeon.setTarget(freshest.getPosition());
+                }
 
 
             }

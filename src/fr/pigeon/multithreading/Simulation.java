@@ -36,7 +36,18 @@ public class Simulation implements Runnable {
     }
 
     public void stop() {
+        // Arrêter la boucle de la simulation
         this.isRunning = false;
+        // Arrêter proprement tous les pigeons actifs
+        if (gameState != null) {
+            for (Pigeon p : gameState.getPigeons()) {
+                try {
+                    p.stopThread();
+                } catch (Exception ignored) {
+                    // Ne pas laisser une exception d'arrêt casser la fermeture
+                }
+            }
+        }
     }
 
 

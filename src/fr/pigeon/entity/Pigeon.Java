@@ -5,6 +5,8 @@ public class Pigeon extends Entity implements Runnable {
     private volatile boolean isRunning = true; // Le thread est il en cours d'exécution ?
     private volatile boolean isFlying; // LE pigeon est-il en vol ?
     private volatile boolean isAfraid;
+    // Référence sur le thread qui exécute ce pigeon (permet arrêt propre)
+    private volatile Thread threadRef;
     private static final float SPEED = 1.0f; // Vitesse de déplacement du pigeon
     private int mealsEaten;
     private Coordinate target;
@@ -45,8 +47,21 @@ public class Pigeon extends Entity implements Runnable {
     }
 
     public void startThread() {
-        Thread pigeonThread = new Thread(this);
-        pigeonThread.start();
+        // Ne pas créer plusieurs threads pour le même pigeon
+        if (threadRef != null && threadRef.isAlive()) return;
+        threadRef = new Thread(this, "Pigeon-Thread");
+        threadRef.start();
+    }
+
+    /**
+     * Arrête proprement le thread du pigeon.
+     * Met isRunning à false et interrompt le thread si nécessaire.
+     */
+    public void stopThread() {
+        this.isRunning = false;
+        if (threadRef != null) {
+            threadRef.interrupt();
+        }
     }
 
     public void startPigeon() {
