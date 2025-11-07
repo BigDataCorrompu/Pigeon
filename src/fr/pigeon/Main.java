@@ -34,6 +34,8 @@ public class Main {
             frame.setContentPane(root);
             frame.pack();
             frame.setLocationRelativeTo(null);
+               // Donner le focus au display au démarrage
+               display.requestFocusInWindow();
             frame.setVisible(true);
 
             // Action du bouton Restart : arrête la simulation courante et en démarre une nouvelle
@@ -48,6 +50,8 @@ public class Main {
                 Simulation newSim = new Simulation();
                 simRef.set(newSim);
                 display.setSimulation(newSim);
+                    // Redonner le focus au panneau d'affichage pour que les raccourcis clavier fonctionnent
+                    display.requestFocusInWindow();
                 new Thread(newSim).start();
             });
 

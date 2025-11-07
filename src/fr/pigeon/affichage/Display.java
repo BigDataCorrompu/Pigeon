@@ -26,8 +26,8 @@ public class Display extends JPanel {
     public Display() {
         setPreferredSize(new Dimension(widthWindow, heightWindow));
         setBackground(Color.WHITE);
-        setFocusable(true); // Ajout pour que le KeyListener fonctionne
-        requestFocusInWindow(); // Demande le focus
+    setFocusable(true); // Permet de recevoir le focus
+    // Ne pas forcer le focus ici de façon bloquante; on demandera le focus lors du clic
 
         // Sprite arriere plan
         try {
@@ -53,16 +53,25 @@ public class Display extends JPanel {
             }
         });
 
-        // Key listener pour ajouter un pigeon avec une touche
-        addKeyListener(new KeyAdapter() {
-                @Override
-                public void keyPressed(KeyEvent e) {
-                    if (e.getKeyCode() == KeyEvent.VK_SPACE) {
-                        simulation.spawnRandomPigeon(widthWindow, heightWindow);
-                        repaint(); 
-                    }
+        // Key bindings (WHEN_IN_FOCUSED_WINDOW) : plus robuste que KeyListener
+        getInputMap(WHEN_IN_FOCUSED_WINDOW).put(KeyStroke.getKeyStroke("SPACE"), "spawnPigeon");
+        getActionMap().put("spawnPigeon", new AbstractAction() {
+            @Override
+            public void actionPerformed(java.awt.event.ActionEvent e) {
+                if (simulation != null) {
+                    simulation.spawnRandomPigeon(widthWindow, heightWindow);
+                    repaint();
                 }
-            });
+            }
+        });
+
+        // Ensure the panel requests focus when clicked so focus-based interactions work
+        addMouseListener(new MouseAdapter() {
+            @Override
+            public void mousePressed(MouseEvent e) {
+                requestFocusInWindow();
+            }
+        });
     }   
 
     private void drawLegend(Graphics2D g2) {
