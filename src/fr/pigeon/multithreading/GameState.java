@@ -136,8 +136,12 @@ public class GameState {
 
     public void eatMeal(Pigeon pigeon, Meal meal) {
         synchronized (this) {
-            meals.remove(meal);
-            pigeon.feed();
+            // Remove only if still present; only the thread that succeeds to remove
+            // should be allowed to feed the pigeon.
+            boolean removed = meals.remove(meal);
+            if (removed) {
+                pigeon.feed();
+            }
         }
     }
 
@@ -159,6 +163,14 @@ public class GameState {
             // Force le pigeon à voler même sans nourriture
             pigeon.startPigeon();
         }
+    }
+
+    /**
+     * Méthode de test / utilitaire : force la dispersion des pigeons.
+     * Utile pour les tests unitaires.
+     */
+    public void forceDisperse() {
+        dispersePigeons();
     }
 
     public List<Meal> getMeals() {

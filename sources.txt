@@ -8,3 +8,4 @@ src/fr/pigeon/Main.java
 src/fr/pigeon/multithreading/GameState.java
 src/fr/pigeon/multithreading/Simulation.java
 src/fr/pigeon/utils/Constants.java
+src/fr/pigeon/tests/TestSuite.java

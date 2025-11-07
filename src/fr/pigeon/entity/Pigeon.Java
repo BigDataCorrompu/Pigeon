@@ -46,6 +46,21 @@ public class Pigeon extends Entity implements Runnable {
         this.target = target;
     }
 
+    /** Retourne la cible actuelle du pigeon (peut être null). */
+    public Coordinate getTarget() {
+        return this.target;
+    }
+
+    /** Indique si le pigeon est en train de voler (true) ou au repos (false). */
+    public boolean isFlying() {
+        return this.isFlying;
+    }
+
+    /** Retourne le nombre de repas consommés par ce pigeon. */
+    public int getMealsEaten() {
+        return this.mealsEaten;
+    }
+
     public void startThread() {
         // Ne pas créer plusieurs threads pour le même pigeon
         if (threadRef != null && threadRef.isAlive()) return;
