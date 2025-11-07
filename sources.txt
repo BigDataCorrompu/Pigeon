@@ -2,8 +2,8 @@ src/fr/pigeon/affichage/Display.java
 src/fr/pigeon/entity/AtomEntity.java
 src/fr/pigeon/entity/Coordinate.java
 src/fr/pigeon/entity/Entity.java
-src/fr/pigeon/entity/Meal.Java
-src/fr/pigeon/entity/Pigeon.Java
+src/fr/pigeon/entity/Meal.java
+src/fr/pigeon/entity/Pigeon.java
 src/fr/pigeon/Main.java
 src/fr/pigeon/multithreading/GameState.java
 src/fr/pigeon/multithreading/Simulation.java

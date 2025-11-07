@@ -2,6 +2,7 @@ package fr.pigeon.multithreading;
 import fr.pigeon.entity.Coordinate;
 import fr.pigeon.entity.Meal;
 import fr.pigeon.entity.Pigeon;
+import fr.pigeon.utils.Constants;
 import java.awt.Color;
 import java.awt.Graphics2D;
 import java.util.List;
@@ -126,12 +127,11 @@ public class GameState {
     private void dispersePigeons() {
         for (Pigeon pigeon : pigeons) {
             pigeon.setAfraid();
-            // Calcule une nouvelle position aléatoire
-            float newX = random.nextFloat() * 800 * ((random.nextFloat() * 2f) - 1f) * 1000; 
-            float newY = random.nextFloat() * 600 * ((random.nextFloat() * 2f) - 1f) * 1000; 
+            // Calcule une nouvelle position aléatoire dans les bornes de la fenêtre
+            float newX = random.nextFloat() * Constants.WINDOW_WIDTH;
+            float newY = random.nextFloat() * Constants.WINDOW_HEIGHT;
             pigeon.setTarget(new Coordinate(newX, newY));
-            
-            
+
             // Force le pigeon à voler même sans nourriture
             pigeon.startPigeon();
         }
