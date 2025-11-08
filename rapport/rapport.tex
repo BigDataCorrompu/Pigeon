@@ -1,0 +1,438 @@
+
+\documentclass[12pt,a4paper]{article}
+
+% Packages de base
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[french]{babel}
+\usepackage{graphicx}
+\usepackage{geometry}
+\usepackage[hidelinks]{hyperref}
+\usepackage{xcolor}
+\usepackage{tcolorbox}
+\usepackage{listings}
+\usepackage{float}
+\usepackage{caption}
+\usepackage{amsmath}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,shapes.geometric,positioning,calc}
+\geometry{margin=2.5cm}
+
+  \tcbset{
+  colback=gray!5,
+  colframe=gray!60,
+  left=3mm,
+  right=3mm,
+  top=1mm,
+  bottom=1mm,
+  boxrule=0pt
+}
+
+% Pas de numérotation sur la page de garde
+\pagenumbering{gobble}
+
+\begin{document}
+
+% =====================
+% Page de garde (TP2 - Question 1)
+% =====================
+
+\begin{titlepage}
+    \centering
+    \vspace*{1.5cm}
+    \includegraphics[width=0.22\textwidth]{uqac.png}\par\vspace{0.8cm}
+    {\Huge \textbf{8INF957 -- Programmation objet avancée}}\\[2cm]
+    {\bfseries\LARGE Université du Québec }\\[0.4cm]
+    {\bfseries\LARGE Chicoutimi (UQAC)}\\[0.4cm]
+    {\large Département d'informatique et de mathématique}\\[1.2cm]
+
+
+    {\Large TP2 — Question 1 : Simulation d'alimentation de pigeons}\\[1.2cm]
+
+
+    {\Large Date de distribution : 07 octobre 2025}\\[0.2cm]
+    {\Large Date de remise : 11 novembre 2025}\\[1.5cm]
+
+      \textbf{Auteurs :} \\[0.3cm]
+     Manon \textsc{Le Vallois}\\ 
+     Roland \textsc{Oucherif} \\ 
+     Sophie \textsc{Rumeau}\\[1.5cm]
+
+    \vfill
+      \textbf{Professeur :} Hamid Mcheick\\[0.4cm]
+      \textbf{Session :} Automne 2025
+    \vspace*{1cm}
+\end{titlepage}
+
+% Reprendre la numérotation
+\newpage
+\pagenumbering{arabic}
+\setcounter{page}{1}
+
+  \tableofcontents
+\newpage
+
+% =====================
+% Introduction / Objectifs
+% =====================
+\section{Introduction}
+Ce document est le rapport correspondant à la Question 1 du TP2 pour le cours 8INF957 (Programmation objet avancée). Il décrit la conception, l'implémentation et les décisions prises pour réaliser une simulation d'alimentation de pigeons dans un espace public.
+
+\section{Objectifs}
+Les objectifs spécifiques de la question 1 sont :
+\begin{itemize}
+  \item Mettre en œuvre une simulation multi‑threadée où chaque pigeon est contrôlé par un thread.
+  \item Garantir la robustesse concurrente lors de l'ajout/suppression de nourriture et du dessin.
+  \item Fournir une interface graphique simple pour interagir (ajout de nourriture par clic) et observer le comportement.
+  \item Respecter les contraintes fonctionnelles énoncées dans l'énoncé (sélection de la nourriture la plus fraîche, comportement face à la nourriture non fraîche, dispersion aléatoire, arrêt propre des threads, etc.).
+\end{itemize}
+
+% =====================
+% Conception
+% =====================
+\section{Conception générale}
+\subsection{Diagramme de classes}
+%Insérer ici le diagramme de classes (UML) expliquant les principales classes et leurs relations. Un fichier image `rapport/class_diagram.png` peut être placé dans le dossier pour inclure la figure :
+\begin{figure}[H]
+  \centering
+  % Prefer the freshly rendered PNG from mermaid-cli (diagrammeClassMMD.png) if present.
+  \IfFileExists{ressources/diagrammeClassMMD.png}{%
+    \includegraphics[width=0.85\textwidth]{ressources/diagrammeClassMMD2.png}%
+  }{%
+    % Otherwise prefer a pre-converted PDF (vector) if available
+    \IfFileExists{ressources/diagrammeClass.pdf}{%
+      \includegraphics[width=0.85\textwidth]{ressources/diagrammeClass.pdf}%
+    }{%
+      % Otherwise fallback to the original PNG if present
+      \IfFileExists{ressources/diagrammeClass.png}{%
+        \includegraphics[width=0.85\textwidth]{ressources/diagrammeClass.png}%
+      }{%
+        \fbox{\parbox[c][4cm][c]{0.85\textwidth}{\centering Image \texttt{diagrammeClassMMD.png} ou \texttt{diagrammeClass.pdf} manquante -- placez le fichier dans le dossier \texttt{rapport/ressources/} pour l'inclure.}}%
+      }
+    }
+  }
+  \caption{Diagramme de classes (UML).}
+\end{figure}
+
+
+
+\subsection{Structure des packages}
+La structure retenue pour le projet est la suivante (extrait du dépôt) :
+\begin{itemize}
+  \item `fr.pigeon.affichage` : classes UI (fenêtre, panneau de dessin, gestion des entrées utilisateur)
+  \item `fr.pigeon.entity` : modèles de domaine (Pigeon, Meal, Coordinate, Entity)
+  \item `fr.pigeon.multithreading` : classes de simulation et état global (Simulation, GameState)
+  \item `fr.pigeon.utils` : constantes et utilitaires
+\end{itemize}
+
+\subsection{Contrat des composants (récapitulatif)}
+Pour chaque composant on précise brièvement le contrat (entrées, sorties, invariants, exceptions) :
+\begin{itemize}
+  \item \textbf{Pigeon} : contrôle d'un pigeon (démarrage/arrêt du thread), méthode `run()` pour gérer le comportement ; invariant : position toujours dans les limites de la fenêtre.
+  \item \textbf{Meal} : position et niveau de fraicheur ; méthode `isFresh()` ; suppression atomique lorsqu'un pigeon mange.
+  \item \textbf{GameState} : contient listes de pigeons et de meals, méthodes synchronisées pour ajout/suppression et lecture pour le rendu.
+\end{itemize}
+
+\subsection{Analyse des choix architecturaux}
+Ce sous‑chapitre explique comment les principes d'ingénierie logicielle ont guidé les choix de conception.
+\paragraph{SOLID}
+\begin{itemize}
+  \item \textbf{Single Responsibility} : chaque classe a une responsabilité unique — `Display` s'occupe uniquement de l'affichage et des entrées, `Pigeon` contient la logique comportementale, `GameState` gère l'état partagé (pigeons + meals), `Simulation` orchestre le cycle de vie des threads.
+  \item \textbf{Open/Closed} : les fonctionnalités (ex : rasterisation SVG) sont ajoutées sous forme de modules optionnels (`SvgRasterizer`) sans modifier le coeur du moteur de simulation, ce qui permet d'étendre le rendu sans modifier `Display` de façon invasive.
+  \item \textbf{Liskov} et \textbf{Interface Segregation} sont respectés par la séparation claire entre entités (domain) et affichage (UI).
+  \item \textbf{Dependency Inversion} : les composants haut niveau dépendent d'abstractions (par ex. interfaces ou contrats simples) et non d'implémentations concrètes lorsque cela avait du sens.
+\end{itemize}
+
+\paragraph{Cohésion et couplage}
+Les packages et classes sont conçus pour maximiser la cohésion (fonctions proches ensemble) et réduire le couplage (interfaces simples entre packages). Par exemple, `GameState` expose des méthodes pour ajouter/retirer des `Meal` et fournit une vue en lecture seule pour `Display` afin d'éviter des dépendances croisées.
+
+\paragraph{Généricité, Héritage et Délégation}
+Le projet favorise la délégation sur l'héritage lorsque possible : les entités partagent une classe de base `Entity` pour la position et le dessin minimaux, mais les comportements spécifiques (p.ex. `Pigeon`) sont encapsulés dans des classes dédiées. L'utilisation de génériques est limitée (pas nécessaire pour la taille du projet) mais la conception garde la porte ouverte pour des collections typées et des services réutilisables.
+
+% =====================
+% Multithreading et synchronisation
+% =====================
+\section{Programmation concurrente — détails d'implémentation}
+La partie la plus critique de la notation est la programmation concurrente. Cette section décrit précisément l'implémentation, les choix et les compromis.
+
+\subsection{Modèle d'exécution et cycle de vie des threads}
+Chaque pigeon est implémenté comme une classe `Pigeon` qui implémente `Runnable`. Lors de la création de la simulation, chaque `Pigeon` reçoit son propre `Thread` (référence conservée dans l'objet). Le cycle de vie suit ce schéma :
+\begin{enumerate}
+  \item Création des instances `Pigeon` et enregistrement dans `GameState`.
+  \item Démarrage des threads (appel à `pigeon.startThread()` qui crée et démarre le `Thread`).
+  \item Boucle principale dans `run()` : calcul du mouvement, recherche de la cible (nourriture la plus fraîche), déplacement d'un pas, pause via `Thread.sleep(stepMs)`.
+  \item Arrêt propre : `Simulation.stop()` appelle `stopThread()` sur chaque pigeon, ce qui met le drapeau `running=false` et effectue un `interrupt()` pour sortir d'un `sleep` éventuel. Ensuite la simulation peut `join()` sur les threads si nécessaire.
+\end{enumerate}
+
+Voir le schéma correspondant en annexe : \hyperref[fig:thread-lifecycle]{Schéma — cycle de vie d'un thread}.
+
+
+\subsection{Mécanismes de communication et synchronisation}
+Le coeur du problème est le partage des ressources (liste de `Meal`) entre plusieurs threads de pigeons et le thread d'affichage (Swing EDT). Les choix faits :
+\begin{itemize}
+  \item \textbf{Collections et stratégie d'accès} :
+    \begin{itemize}
+      \item Pour les pigeons et autres entités, on utilise une collection qui favorise les lectures fréquentes durant le rendu (ex. `CopyOnWriteArrayList` dans certains composants) — cela simplifie la gestion concurrente lorsque les écritures sont rares.
+      \item Pour les `Meal`, les opérations d'ajout (clic utilisateur) et de suppression (mangé / pourri) sont plus fréquentes et sensibles. La stratégie retenue consiste à protéger les modifications critiques par une synchronisation explicite sur `GameState` (bloc `synchronized`) lors de l'itération et de la suppression.
+    \end{itemize}
+  \item \textbf{Suppression atomique d'un meal} : lorsqu'un pigeon détecte qu'il est à portée d'un `Meal` frais, il entre dans une section critique où il re‑vérifie que le meal est toujours présent (n'a pas été supprimé par un autre pigeon) puis le retire. Cette vérification + suppression prennent place dans la même section `synchronized` pour garantir qu'un seul pigeon supprime le meal.
+  \item \textbf{Protection pendant le rendu} : Swing dessine sur l'EDT ; pendant le dessin, `Display` prend une copie ou verrouille l'accès aux collections nécessaires (selon l'implémentation) pour éviter les ConcurrentModificationException. Le compromis consiste soit à utiliser des copies en lecture (bon pour la latence), soit à garder un verrou bref pendant la création de la vue à dessiner.
+\end{itemize}
+\newpage
+\subsection{Exceptions, interruptions et robustesse des threads}
+\begin{itemize}
+  \item \textbf{InterruptedException} est attendue lors de l'arrêt des threads (interruption d'un `sleep`). Le code attrape cette exception, restaure l'état d'interruption via\\ `Thread.currentThread().interrupt()` et termine proprement la boucle `run()`.
+  \item \textbf{Exceptions non contrôlées} : toute exception Runtime inattendue dans la boucle d'un thread est capturée et loggée de façon à éviter la terminaison silencieuse d'un thread. Selon la gravité, la thread peut tenter un redémarrage local ou signaler l'erreur au gestionnaire central (`Simulation`) pour prise de décision.
+  \item \textbf{Politique d'arrêt} : `Simulation.stop()` est idempotent — il peut être appelé plusieurs fois sans effet secondaire, car chaque `Pigeon` vérifie l'état avant d'agir. L'appel à `interrupt()` accélère la sortie des threads en sommeil.
+\end{itemize}
+
+\subsection{Décisions de conception et compromis}
+\begin{itemize}
+  \item \textbf{Un thread par pigeon vs thread pool} : pour la lisibilité et l'exercice pédagogique, nous avons choisi un thread par pigeon. Pour des simulations plus grandes ( centaines / milliers d'entités ), une architecture fondée sur un pool d'exécuteurs (ExecutorService) et des tâches périodiques serait plus performante et consommant moins de ressources.
+  \item \textbf{Collections concurrentes vs verrou explicite} : les collections concurrentes (p.ex. `ConcurrentLinkedQueue`) réduisent la nécessité de verrous explicites mais complexifient certaines opérations atomiques (recherche + suppression) ; nous avons donc choisi la simplicité et la clarté pédagogique : verrous courts autour des sections critiques.
+  \item \textbf{Consistance visuelle vs performances} : pendant le dessin, on accepte un léger biais de fraîcheur (lecture non verrouillée) pour garder une UI fluide ; les opérations d'écriture critiques restent protégées.
+\end{itemize}
+
+% =====================
+% Gestion d'exceptions et robustesse
+% =====================
+\section{Gestion d'exceptions}
+La gestion d'exceptions a été pensée pour maximiser la robustesse et limiter la perte de service :
+\begin{itemize}
+  \item Les points d'entrée des threads (méthode `run`) entourent le code par un bloc `try/catch` capturant `InterruptedException` et `RuntimeException` pour éviter qu'un thread ne meure silencieusement.
+  \item Les opérations d'E/S (chargement d'images, lecture de ressources) renvoient des erreurs non bloquantes : si le sprite PNG manque, le code tente de rasteriser le SVG, sinon un dessin de fallback (triangle) est utilisé. Ceci évite qu'une ressource manquante fasse planter l'application entière.
+  \item Les erreurs fatales (ex : échec permanent d'initialisation) sont signalées à l'utilisateur via un message sur la console et une boite de dialogue, puis l'application s'arrête proprement.
+\end{itemize}
+
+% =====================
+% Tests et validation
+% =====================
+\section{Tests et validation}
+\subsection{Tests automatiques}
+Un petit harness de tests (`fr.pigeon.tests.TestSuite`) est fourni et peut être exécuté par :
+\begin{lstlisting}
+    java -cp out fr.pigeon.tests.TestSuite
+\end{lstlisting}
+
+Les tests couvrent :
+\begin{itemize}
+  \item Sélection du meal le plus frais (comportement A).
+  \item Suppression sûre concurrente de `Meal` (comportement C).
+  \item Arrêt propre des threads lors de la fin de la simulation (comportement B).
+\end{itemize}
+
+\subsection{Tests manuels}
+Les tests manuels consistent à :
+\begin{itemize}
+  \item Lancer l'application (`make run`) et ajouter des meals par clic, vérifier que les pigeons se dirigent vers la nourriture la plus fraîche.
+  \item Vérifier que deux pigeons arrivant simultanément sur un meal ne provoquent pas de suppression double (un seul pigeon marque la nourriture comme mangée).
+  \item Tester la fonctionnalité Restart et s'assurer que la touche Espace fonctionne après redémarrage (corriger le focus si nécessaire).
+\end{itemize}
+
+\subsection{Résultats}
+À la date de rédaction, le harness de tests signale : \textbf{Tests passés : 9, Échecs : 0}. Les tests sont simples mais ciblent les aspects concurrents critiques.
+
+% =====================
+% Mode d'emploi / Remise
+% =====================
+\section{Instructions pour exécuter}
+\begin{enumerate}
+  \item (Optionnel) créer et activer un venv pour l'outil de conversion SVG :
+  \begin{itemize}
+    \item macOS / Linux :
+    \begin{verbatim}
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+    \end{verbatim}
+    \item Windows (PowerShell):
+    \begin{verbatim}
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
+pip install -r requirements.txt
+    \end{verbatim}
+  \end{itemize}
+  \item Compiler : `make compile` (le Makefile tente la conversion SVG→PNG si le PNG manque).
+  \item Lancer : `make run`.
+\end{enumerate}
+
+\section{Mode d'emploi interactif — comment jouer}
+Cette section remplace la version générique précédente par les commandes et comportements réellement implémentés dans l'application "Pigeon" (extraits du code source). Elle contient aussi des emplacements pour captures d'écran.
+
+\subsection{Lancer l'application}
+\begin{itemize}
+  \item Depuis la racine du projet, compiler et lancer : \texttt{make run} (ou exécuter la classe \texttt{fr.pigeon.Main} depuis votre IDE).
+  \item La fenêtre s'ouvre avec la zone de simulation (taille fixe 800×600) et la barre de contrôle contenant le bouton \texttt{Restart}.
+\end{itemize}
+
+\subsection{Commandes disponibles (clavier et UI)}
+Le code actuel expose les interactions suivantes :
+\begin{itemize}
+  \item \textbf{Clic souris (zone de simulation)} : ajoute un \texttt{Meal} (nourriture) à la position du clic. Le panneau capture l'événement \texttt{mouseClicked} et appelle \texttt{simulation.addMeal(...)}. Note : cliquer sur le panneau donne également le focus afin que les raccourcis clavier fonctionnent.
+  \item \textbf{Espace (SPACE)} : fait apparaître un pigeon aléatoirement dans la fenêtre (méthode \texttt{Simulation.spawnRandomPigeon(...)}). Cette action crée un nouvel objet \texttt{Pigeon}, démarre son thread et l'ajoute au \texttt{GameState}.
+  \item \textbf{Bouton Restart (UI)} : le bouton \texttt{Restart} arrête proprement la simulation courante (appel à \texttt{Simulation.stop()}), crée une nouvelle instance \texttt{Simulation}, la lie au \texttt{Display} et démarre la nouvelle boucle de simulation dans un thread séparé.
+\end{itemize}
+
+Remarque : il n'y a pas de touche "Pause" implémentée dans le code source ni d'option \texttt{S} ou \texttt{Q} par défaut — ne vous fiez pas aux mentions génériques précédentes.
+
+\subsection{Comportements des pigeons (ce qui est codé)}
+Voici le comportement attendu et observé en fonction du code :
+\begin{itemize}
+  \item \textbf{Démarche générale} : chaque pigeon est un objet \texttt{Pigeon} exécuté sur son propre \texttt{Thread}. La boucle \texttt{run()} effectue un pas de simulation (déplacement vers la cible si elle existe) puis dort ~16 ms (~60 Hz).
+  \item \textbf{Recherche de nourriture} : si au moins un \texttt{Meal} est présent, chaque pigeon est mis en mode "vol" (\texttt{startPigeon()}) et se voit assigner comme cible la nourriture la plus fraîche (algorithme : choisir le \texttt{Meal} ayant la valeur maximale de \texttt{freshnessTicks}).
+  \item \textbf{Arrêt / immobilté} : si aucune nourriture n'est présente, les pigeons sont mis au repos (\texttt{stopPigeon()}) et ne se déplacent plus jusqu'à l'apparition d'un \texttt{Meal}.
+  \item \textbf{Collision / consommation} : lorsque la distance entre un pigeon et un \texttt{Meal} est inférieure au rayon d'interaction, la méthode \texttt{eatMeal(pigeon, meal)} est appelée. La suppression du \texttt{Meal} est faite dans un bloc \texttt{synchronized} sur le \texttt{GameState} afin d'assurer l'atomicité : un seul pigeon réussit à supprimer et à consommer le repas (son compteur \texttt{mealsEaten} est incrémenté).
+  \item \textbf{Dégradation de la nourriture} : à chaque étape de simulation, la fraîcheur des \texttt{Meal} est décrémentée (\texttt{decreaseFreshness()}). Lorsqu'un \texttt{Meal} n'est plus frais, il est retiré de la liste active et déplacé dans \texttt{rottenMeals} (affiché en rouge dans l'UI).
+  \item \textbf{Peur / dispersion} : le \texttt{GameState} maintient une probabilité dynamique \texttt{scareChance} ; de façon aléatoire, la méthode \texttt{dispersePigeons()} est invoquée. Elle appelle \texttt{pigeon.setAfraid()}, choisit une position aléatoire pour chaque pigeon et force le pigeon à voler vers cette nouvelle cible. L'état de peur dure un temps défini \texttt{FEAR\_DURATION} dans \texttt{Pigeon}. Après expiration, le pigeon redevient calme.
+\end{itemize}
+
+\subsection{Indications visuelles dans l'interface}
+Dans le rendu fourni par \texttt{Display} et \texttt{GameState} :
+\begin{itemize}
+  \item Les \textbf{pigeons} sont dessinés en bleu (ou par un sprite si l'image est disponible). Leur orientation est tournée vers la cible lorsqu'ils ont un target.
+  \item Les \textbf{meals} frais sont dessinés en vert ; les \textbf{meals} périmés (rotten) sont dessinés en rouge (liste \texttt{rottenMeals}).
+  \item La légende dans le coin supérieur gauche indique les couleurs et quelques raccourcis (affichée par \texttt{drawLegend}).
+\end{itemize}
+
+\subsection{Scénarios d'observation (guidés)}
+
+\subsubsection*{Scénario 1 — État initial}
+\begin{enumerate}
+  \item Lancer l'application (\texttt{make run}).
+  \item Observation : la fenêtre s'ouvre et les pigeons (s'ils existent à l'initialisation) peuvent être immobiles si aucune nourriture n'est présente.
+  \item Capture d'écran : déposer \texttt{ressources/screenshot\_initial.png} pour l'illustration.
+\end{enumerate}
+
+\begin{figure}[H]
+  \centering
+  \IfFileExists{ressources/screenshot_initial.png}{%
+    \includegraphics[width=0.6\textwidth]{ressources/screenshot_initial.png}%
+  }{%
+    \fbox{\parbox[c][3.5cm][c]{0.6\textwidth}{\centering Capture d'écran (état initial) - placer \texttt{ressources/screenshot\_initial.png}}}%
+  }
+  \caption{État initial de la simulation (placeholder).}
+\end{figure}
+
+\subsubsection*{Scénario 2 — Ajouter une nourriture et observer la course}
+\begin{enumerate}
+  \item Cliquer (mouse click) dans la zone de simulation pour créer un \texttt{Meal}.
+  \item Observation : un cercle vert apparaît à l'emplacement; dans les frames suivantes, les pigeons calculent la nourriture la plus fraîche et se dirigent vers elle.
+  \item Capture d'écran : déposer \texttt{ressources/screenshot\_add\_meal.png}.
+\end{enumerate}
+
+\begin{figure}[H]
+  \centering
+  \IfFileExists{ressources/screenshot_add_meal.png}{%
+    \includegraphics[width=0.6\textwidth]{ressources/screenshot_add_meal.png}%
+  }{%
+    \fbox{\parbox[c][3.5cm][c]{0.6\textwidth}{\centering Capture d'écran (après ajout d'un meal) - placer \texttt{ressources/screenshot\_add\_meal.png}}}%
+  }
+  \caption{Après ajout d'un meal (placeholder).}
+\end{figure}
+
+\subsubsection*{Scénario 3 — Course concurrente vers un même meal}
+\begin{enumerate}
+  \item Placer un \texttt{Meal} entre deux pigeons ou appuyer plusieurs fois pour créer des pigeons proches et un meal partagé.
+  \item Observation : plusieurs pigeons peuvent se diriger vers le même repas ; lorsqu'ils arrivent, la suppression se fait dans une section synchronisée. Un seul pigeon devrait réussir à supprimer/consommer le meal (les autres détectent l'absence et se redirigent).
+  \item Capture d'écran : déposer \texttt{ressources/screenshot\_race.png}.
+\end{enumerate}
+
+\begin{figure}[H]
+  \centering
+  \IfFileExists{ressources/screenshot_race.png}{%
+    \includegraphics[width=0.6\textwidth]{ressources/screenshot\_race.png}%
+  }{%
+    \fbox{\parbox[c][3.5cm][c]{0.6\textwidth}{\centering Capture d'écran (course vers un meal) - placer \texttt{ressources/screenshot\_race.png}}}%
+  }
+  \caption{Course de plusieurs pigeons vers un même meal (placeholder).}
+\end{figure}
+
+\subsubsection*{Scénario 4 — Décroissance des meals}
+\begin{enumerate}
+  \item Laisser un meal sur place et observer plusieurs étapes de la simulation.
+  \item Observation : la fraîcheur diminue via \texttt{decreaseFreshness()} ; quand un meal n'est plus frais il est retiré des \texttt{meals} actifs et placé dans \texttt{rottenMeals} (affiché en rouge).
+  \item Capture d'écran : déposer une image montrant un meal périmé si disponible.
+\end{enumerate}
+
+\subsubsection*{Scénario 5 — Restart et génération de pigeons}
+\begin{enumerate}
+  \item Cliquer sur le bouton \texttt{Restart} en bas de la fenêtre : la simulation courante est arrêtée proprement et une nouvelle simulation démarre (les listes de pigeons/meals sont réinitialisées).
+  \item Après un restart, s'assurer que le panneau a le focus (cliquer dans la zone) puis appuyer sur \texttt{SPACE} pour générer un pigeon aléatoire.
+  \item Capture d'écran : avant/après restart (placer les fichiers correspondants dans \texttt{ressources/}).
+\end{enumerate}
+
+\subsection{Que surveiller (indicateurs de correct fonctionnement)}
+\begin{itemize}
+  \item \textbf{Suppression atomique} : un seul pigeon doit consommer chaque meal (vérifier \texttt{mealsEaten} et l'absence de duplicates).
+  \item \textbf{Absence d'erreurs de concurrence} : pas de \texttt{ConcurrentModificationException} pendant le rendu ou les mises à jour (les collections sont manipulées de façon sûre).
+  \item \textbf{Threads propres} : après un \texttt{Restart}, les threads de la vieille simulation sont interrompus et la nouvelle simulation démarre ses propres threads.
+  \item \textbf{Indicateurs visuels} : meals frais = vert, meals périmés = rouge, pigeons = bleu ou sprite si présent.
+\end{itemize}
+
+
+% Fin du mode d'emploi interactif
+
+\appendix
+
+
+
+% =====================
+% Annexes
+% =====================
+\appendix
+\section{Extraits de code importants}
+\subsection{Sélection de la nourriture la plus fraîche}
+Extrait (simplifié) :
+\begin{lstlisting}[language=Java]
+Meal findFreshest(Collection<Meal> meals) {
+  Meal best = null;
+  for (Meal m : meals) {
+    if (m.isFresh() && (best == null || m.getFreshness() > best.getFreshness())) {
+      best = m;
+    }
+  }
+  return best;
+}
+\end{lstlisting}
+
+\subsection{Suppression sûre d'un meal (schéma)}
+\begin{lstlisting}[language=Java]
+synchronized(gameState) {
+  if (gameState.contains(meal) && meal.isFresh()) {
+    gameState.remove(meal);
+  }
+}
+\end{lstlisting}
+
+
+\subsection{Schéma — cycle de vie d'un thread}
+\label{app:thread-schema}
+\begin{figure}[H]
+  \centering
+  \begin{tikzpicture}[node distance=12mm, every node/.style={font=\small}]
+    % nodes
+    \node[draw, rounded corners, minimum width=3.6cm, align=center] (create) {1) Création des instances\\`Pigeon` \\et enregistrement dans `GameState`};
+    \node[draw, rounded corners, below=of create, minimum width=3.6cm, align=center] (start) {2) `pigeon.startThread()`\\Création et démarrage du `Thread`};
+    \node[draw, rounded corners, below=of start, minimum width=5.2cm, align=left] (run) {3) Boucle `run()` :\\- Calcul du mouvement\\- Recherche de la nourriture la plus fraîche\\- Déplacement d'un pas\\- `Thread.sleep(stepMs)`};
+    \node[draw, rounded corners, below=of run, minimum width=3.6cm, align=center] (stop) {4) `Simulation.stop()`\\`stopThread()` : `running=false` + `interrupt()`};
+    \node[draw, diamond, aspect=2, below=of stop, align=center] (join) {Optionnel : `join()`\\attendre fin du thread};
+
+    % arrows
+    \draw[->, thick] (create) -- (start);
+    \draw[->, thick] (start) -- (run);
+    \draw[->, thick] (run) -- (stop) node[midway,right, font=\scriptsize] {signal d'arrêt};
+    \draw[->, thick] (stop) -- (join);
+
+    % loop indicator
+    \draw[->, thick, shorten >=1pt] ($(run.east)+(0.2,0)$) .. controls +(1.0,0) and +(1.0,0) .. ($(run.east)+(0.2,-2.2)$) -- ++(-1.0,0) node[pos=0.25,right, font=\scriptsize] {itération\ continue};
+  \end{tikzpicture}
+  \caption{Cycle de vie d'un thread gérant un pigeon — du démarrage à l'arrêt propre.}\label{fig:thread-lifecycle}
+\end{figure}
+
+\vfill
+\noindent
+Fait par : Sophie, Manon et Rolland\\
+Date : \today
+
+\end{document}
+

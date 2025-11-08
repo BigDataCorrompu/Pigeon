@@ -1,0 +1,145 @@
+classDiagram
+    %% Project: Pigeon (simplified class diagram for the report)
+
+    class Main {
+        -frame: JFrame
+        -display: Display
+        -simulation: Simulation
+        +main(args: String[]): void
+        +createAndShowGui(): void
+        +onRestart(): void
+    }
+
+    class Display {
+        -gameState: GameState
+        -sprite: BufferedImage
+        -showSprites: boolean
+        -keyBindingsInstalled: boolean
+        +Display(gameState: GameState)
+        +paintComponent(g: Graphics): void
+        +loadSprite(): void
+        +requestFocusOnClick(): void
+        +togglePause(): void
+    }
+
+    class Entity {
+        -id: String
+        -position: Coordinate
+        +getPosition(): Coordinate
+        +setPosition(c: Coordinate): void
+        +draw(g2: Graphics2D): void
+    }
+
+    class AtomEntity {
+        -size: int
+        -color: Color
+        +AtomEntity(position: Coordinate, size: int, color: Color)
+        +draw(g2: Graphics2D): void
+    }
+
+    class Coordinate {
+        -x: double
+        -y: double
+        +Coordinate(x: double, y: double)
+        +distanceTo(other: Coordinate): double
+        +clamp(minX: double, minY: double, maxX: double, maxY: double): Coordinate
+    }
+
+    class Meal {
+        -position: Coordinate
+        -freshnessTicks: int
+        +Meal(position: Coordinate)
+        +isFresh(): boolean
+        +decay(): void
+        +getFreshness(): int
+        +getPosition(): Coordinate
+    }
+
+    class Pigeon {
+        -position: Coordinate
+        -target: Meal
+        -threadRef: Thread
+        -running: boolean
+        -mealsEaten: int
+        +Pigeon(position: Coordinate)
+        +startThread(): void
+        +stopThread(): void
+        +run(): void
+        +moveOneStepToward(target: Meal): void
+        +getTarget(): Meal
+        +isFlying(): boolean
+        +getMealsEaten(): int
+    }
+
+    class GameState {
+        -pigeons: List~Pigeon~
+        -meals: List~Meal~
+        -randomSeed: long
+        +addPigeon(p: Pigeon): void
+        +addMeal(pos: Coordinate): void
+        +removeMeal(m: Meal): void
+        +updateFreshnessMeals(): void
+        +findFreshestMealFor(p: Pigeon): Meal
+        +dispersePigeons(): void
+        +getPigeons(): List~Pigeon~
+        +getMeals(): List~Meal~
+    }
+
+    class Simulation {
+        -gameState: GameState
+        -loopThread: Thread
+        -running: boolean
+        +Simulation(gameState: GameState)
+        +start(): void
+        +stop(): void
+        +step(): void
+        +getGameState(): GameState
+    }
+
+    class Constants {
+        <<static>>
+        +WINDOW_WIDTH: int
+        +WINDOW_HEIGHT: int
+        +PIGEON_SPEED: double
+        +SIMULATION_STEP_MS: int
+        +PIGEON_SIZE: int
+        +MEAL_FRESHNESS_THRESHOLD: int
+    }
+
+    class SvgRasterizer {
+        +rasterize(svgStream: InputStream, w: int, h: int): BufferedImage
+    }
+
+    class TestSuite {
+        +main(args: String[]): void
+        +runAll(): void
+    }
+
+    class Runnable {
+        <<interface>>
+        +run(): void
+    }
+
+    %% Inheritance / Implementation
+    Pigeon ..|> Runnable
+    AtomEntity --|> Entity
+    Meal --|> Entity
+    Pigeon --|> Entity
+
+    %% Associations / Uses
+    Main --> Simulation : creates
+    Main --> Display : creates
+    Display --> GameState : reads
+    Display "0..*" --> Pigeon : draws
+    Display --> SvgRasterizer : uses (optional)
+    Pigeon "0..1" --> Meal : target
+    Pigeon --> Coordinate : has position
+    Meal --> Coordinate : has position
+    GameState "1..*" --> Pigeon : contains
+    GameState "0..*" --> Meal : contains
+    Simulation --> GameState : orchestrates / uses
+    TestSuite --> GameState : tests
+    TestSuite --> Pigeon : tests
+    Display --> Constants : uses
+    Pigeon --> Constants : uses
+    GameState --> Constants : uses
