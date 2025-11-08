@@ -1,5 +1,8 @@
 
 # Pigeon — Simulation de pigeons
+Manon Le Vallois
+Roland Oucherif
+Sophie Rumeau
 
 Ce dépôt contient une petite simulation Java (Swing) de pigeons cherchant de la nourriture.
 
@@ -151,7 +154,3 @@ make compile
 - Conservez les crédits originaux pour les assets (le SVG provient d’OpenClipart / wildchief) — voir `src/fr/pigeon/resources/pigeon.svg` metadata.
 
 ---
-
-Si tu veux que j'ajoute un indicateur visuel dans l’UI (coin) affichant si le sprite PNG/SVG a bien été chargé, ou que j'ajoute une cible `make prepare` pour automatiser la création du venv et l'installation des dépendances, dis‑le et je l'ajoute.
-
-

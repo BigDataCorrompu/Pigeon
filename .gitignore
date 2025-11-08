@@ -1,3 +1,11 @@
 # Build output
 /out
 /src/fr/pigeon/resources/
+/rapport/*aux
+/rapport/*fdb_latexmk
+/rapport/*out
+/rapport/*fls
+/rapport/*log
+/rapport/*synctex.gz
+/rapport/*toc
+
