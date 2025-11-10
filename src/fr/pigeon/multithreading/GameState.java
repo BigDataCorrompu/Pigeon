@@ -155,9 +155,17 @@ public class GameState {
     private void dispersePigeons() {
         for (Pigeon pigeon : pigeons) {
             pigeon.setAfraid();
-            // Calcule une nouvelle position aléatoire dans les bornes de la fenêtre
-            float newX = random.nextFloat() * Constants.WINDOW_WIDTH;
-            float newY = random.nextFloat() * Constants.WINDOW_HEIGHT;
+            // Calcule une nouvelle position cible située EN DEHORS de la fenêtre.
+            // On choisit une direction aléatoire depuis la position actuelle et
+            // on place la cible à une distance suffisante pour être hors écran.
+            float px = pigeon.getPosition().getX();
+            float py = pigeon.getPosition().getY();
+            double angle = random.nextDouble() * 2.0 * Math.PI;
+            // Distance choisie comme 1.5 * la plus grande dimension de la fenêtre
+            // afin de garantir que la cible soit en dehors de l'écran.
+            float distance = Math.max(Constants.WINDOW_WIDTH, Constants.WINDOW_HEIGHT) * 1.5f;
+            float newX = px + (float) (Math.cos(angle) * distance);
+            float newY = py + (float) (Math.sin(angle) * distance);
             pigeon.setTarget(new Coordinate(newX, newY));
 
             // Force le pigeon à voler même sans nourriture
